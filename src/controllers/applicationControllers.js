@@ -81,24 +81,29 @@ import Application from "../models/applicationModel.js";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 
+// ✅ Create Application & Send to Google Sheets and Emails
 export const createApplication = async (req, res) => {
   console.log("--- START: New Application Request ---");
   
   try {
     const { fullName, email, phone, course, gender, address } = req.body;
 
-    // 1. Validation
+    // 🔴 1. Validation
     if (!fullName || !email || !phone || !course) {
       return res.status(400).json({ success: false, message: "All required fields must be filled" });
     }
 
-    // 2. Save to MongoDB
+    if (!mongoose.Types.ObjectId.isValid(course)) {
+      return res.status(400).json({ success: false, message: "Invalid course ID" });
+    }
+
+    // 🔴 2. Save to MongoDB
     const application = await Application.create({ fullName, email, phone, course, gender, address });
     const populatedApp = await Application.findById(application._id).populate("course");
     const courseTitle = populatedApp.course ? populatedApp.course.title : "Unknown Course";
     console.log("Step 2 Success: Saved to MongoDB");
 
-    // 3. Google Sheets (Background fetch)
+    // 🔴 3. Forward to Google Sheets (Background fetch)
     const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyEuGmN5urqYzxr8dTj_KXkZI5Oo_6l1ECSPpjdDaqHt5Djn7VgIWdAdC0rLJZI-ZWm/exec";
     
     fetch(GOOGLE_SHEET_URL, {
@@ -114,32 +119,57 @@ export const createApplication = async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER, // Vercel se uthayega
-        pass: process.env.EMAIL_PASS, // Vercel se uthayega
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS, 
       },
     });
 
+    // 📧 5a. Student Confirmation Mail (Receipt)
     const studentMailOptions = {
       from: `"Rattan Institute" <${process.env.EMAIL_USER}>`,
-      to: email,
+      to: email, 
       subject: `Application Received - ${courseTitle}`,
-      html: `<h2>Hello ${fullName},</h2><p>Thank you for applying at RIME.</p>`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee;">
+          <h2 style="color: #2c3e50;">Hello ${fullName},</h2>
+          <p>Thank you for applying at <strong>Rattan Institute of Management and Engineering (RIME)</strong>.</p>
+          <p>We have received your application for the <strong>${courseTitle}</strong> course.</p>
+          <hr />
+          <p>Our team will review your details and get back to you shortly.</p>
+          <p>Best Regards,<br/>Admission Team<br/>RIME</p>
+        </div>
+      `,
     };
 
+    // 📧 5b. Client (Admin) Notification Mail (Puri details ke saath)
     const adminMailOptions = {
       from: `"RIME Portal" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER, // Aapke paas mail aayega
-      subject: `New Lead: ${fullName}`,
-      html: `<p>New student details: <b>${fullName}</b>, ${phone}, ${courseTitle}</p>`,
+      to: "mohdsaquib619@gmail.com", // Aapke client ka email
+      subject: `New Lead: ${fullName} applied for ${courseTitle}`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; background-color: #f9f9f9;">
+          <h2 style="color: #2980b9;">New Student Inquiry</h2>
+          <p>Neeche student ki poori details di gayi hain:</p>
+          <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #ddd;">
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Full Name:</b></td><td style="padding: 10px; border: 1px solid #eee;">${fullName}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Email:</b></td><td style="padding: 10px; border: 1px solid #eee;">${email}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Phone:</b></td><td style="padding: 10px; border: 1px solid #eee;">${phone}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Course:</b></td><td style="padding: 10px; border: 1px solid #eee;">${courseTitle}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Gender:</b></td><td style="padding: 10px; border: 1px solid #eee;">${gender}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Address:</b></td><td style="padding: 10px; border: 1px solid #eee;">${address}</td></tr>
+          </table>
+          <p style="font-size: 12px; color: #7f8c8d; margin-top: 15px;">Note: This data is also saved in MongoDB and Google Sheets.</p>
+        </div>
+      `,
     };
 
-    // 🔴 5. Await Mails (Hosting ke liye sabse zaroori)
+    // 🔴 5. Await Mails (Zaroori for Vercel/Hosting)
     console.log("Attempting to send emails...");
     await transporter.sendMail(studentMailOptions);
     await transporter.sendMail(adminMailOptions);
-    console.log("Step 5 Success: All emails sent!");
+    console.log("Step 5 Success: All emails sent with details!");
 
-    // 6. Response
+    // 🔴 6. Final Response
     res.status(201).json({
       success: true,
       message: "Application submitted successfully",
@@ -150,6 +180,7 @@ export const createApplication = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
+
 
 // ✅ Get All Applications (Admin)
 export const getApplications = async (req, res) => {
