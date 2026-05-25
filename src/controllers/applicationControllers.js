@@ -77,39 +77,28 @@
 //     });
 //   }
 // };
-
 import Application from "../models/applicationModel.js";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 
-// ✅ Create Application & Send to Google Sheets and Emails
 export const createApplication = async (req, res) => {
   console.log("--- START: New Application Request ---");
   
   try {
     const { fullName, email, phone, course, gender, address } = req.body;
 
-    // 🔴 1. Validation
+    // 1. Validation
     if (!fullName || !email || !phone || !course) {
       return res.status(400).json({ success: false, message: "All required fields must be filled" });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(course)) {
-      return res.status(400).json({ success: false, message: "Invalid course ID" });
-    }
-
-    // const existing = await Application.findOne({ email });
-    // if (existing) {
-    //   return res.status(400).json({ success: false, message: "Application already submitted with this email" });
-    // }
-
-    // 🔴 2. Save to MongoDB
+    // 2. Save to MongoDB
     const application = await Application.create({ fullName, email, phone, course, gender, address });
     const populatedApp = await Application.findById(application._id).populate("course");
     const courseTitle = populatedApp.course ? populatedApp.course.title : "Unknown Course";
     console.log("Step 2 Success: Saved to MongoDB");
 
-    // 🔴 3. Forward to Google Sheets
+    // 3. Google Sheets (Background fetch)
     const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyEuGmN5urqYzxr8dTj_KXkZI5Oo_6l1ECSPpjdDaqHt5Djn7VgIWdAdC0rLJZI-ZWm/exec";
     
     fetch(GOOGLE_SHEET_URL, {
@@ -119,66 +108,38 @@ export const createApplication = async (req, res) => {
         fullName, email, phone, course: courseTitle, gender, address,
         appliedAt: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
       }),
-    })
-    .then(() => console.log("Step 3 Success: Google Sheets updated"))
-    .catch((err) => console.error("Step 3 Error:", err.message));
+    }).catch(err => console.log("Sheet Error:", err.message));
 
-    // 🔴 4. Setup Nodemailer (Using your Gmail)
+    // 🔴 4. Setup Nodemailer (Using Variables for Hosting)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "mohdsaquib619@gmail.com", // Aapka sender email
-        pass: process.env.EMAIL_PASS,   // Gmail 16-digit App Password
+        user: process.env.EMAIL_USER, // Vercel se uthayega
+        pass: process.env.EMAIL_PASS, // Vercel se uthayega
       },
     });
 
-    // 📧 5a. Student Confirmation Mail
     const studentMailOptions = {
-      from: `"Rattan Institute" <mohdsaquib619@gmail.com>`,
-      to: email, // Jo student ne form mein bhara
+      from: `"Rattan Institute" <${process.env.EMAIL_USER}>`,
+      to: email,
       subject: `Application Received - ${courseTitle}`,
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee;">
-          <h2 style="color: #2c3e50;">Hello ${fullName},</h2>
-          <p>Thank you for applying at <strong>Rattan Institute (RIME)</strong>.</p>
-          <p>We have received your application for the <strong>${courseTitle}</strong> course.</p>
-          <hr />
-          <p>Our team will review your details and get back to you shortly.</p>
-          <p>Best Regards,<br/>Admission Team<br/>RIME</p>
-        </div>
-      `,
+      html: `<h2>Hello ${fullName},</h2><p>Thank you for applying at RIME.</p>`,
     };
 
-    // 📧 5b. Client (Admin) Notification Mail
     const adminMailOptions = {
-      from: `"RIME Web Portal" <mohdsaquib619@gmail.com>`,
-      to: "mohdsaquib619@gmail.com", // Aapke client ka mail
-      subject: `New Lead: ${fullName} applied for ${courseTitle}`,
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; background-color: #f9f9f9;">
-          <h2 style="color: #2980b9;">New Student Inquiry</h2>
-          <p>Neeche naye student ki details hain:</p>
-          <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-            <p><b>Name:</b> ${fullName}</p>
-            <p><b>Email:</b> ${email}</p>
-            <p><b>Phone:</b> ${phone}</p>
-            <p><b>Course:</b> ${courseTitle}</p>
-            <p><b>Gender:</b> ${gender}</p>
-            <p><b>Address:</b> ${address}</p>
-          </div>
-          <p style="font-size: 12px; color: #7f8c8d; margin-top: 10px;">Data saved in MongoDB & Google Sheets.</p>
-        </div>
-      `,
+      from: `"RIME Portal" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER, // Aapke paas mail aayega
+      subject: `New Lead: ${fullName}`,
+      html: `<p>New student details: <b>${fullName}</b>, ${phone}, ${courseTitle}</p>`,
     };
 
-    // Mail bhejna
-    transporter.sendMail(studentMailOptions); // Student ko
-    transporter.sendMail(adminMailOptions, (err, info) => { // Client ko
-      if (err) console.error("Admin Email Error:", err.message);
-      else console.log("Step 5 Success: Admin Notified!");
-    });
+    // 🔴 5. Await Mails (Hosting ke liye sabse zaroori)
+    console.log("Attempting to send emails...");
+    await transporter.sendMail(studentMailOptions);
+    await transporter.sendMail(adminMailOptions);
+    console.log("Step 5 Success: All emails sent!");
 
-    // 🔴 6. Final Response
+    // 6. Response
     res.status(201).json({
       success: true,
       message: "Application submitted successfully",
