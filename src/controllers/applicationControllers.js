@@ -144,7 +144,7 @@ export const createApplication = async (req, res) => {
     // 📧 5b. Client (Admin) Notification Mail (Puri details ke saath)
     const adminMailOptions = {
       from: `"RIME Portal" <${process.env.EMAIL_USER}>`,
-      to: "mohdsaquib619@gmail.com", // Aapke client ka email
+      to: "adm.rimt26@gmail.com", // Aapke client ka email
       subject: `New Lead: ${fullName} applied for ${courseTitle}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; background-color: #f9f9f9;">
