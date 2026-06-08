@@ -104,7 +104,7 @@ export const createApplication = async (req, res) => {
     console.log("Step 2 Success: Saved to MongoDB");
 
     // 🔴 3. Forward to Google Sheets (Background fetch)
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyEuGmN5urqYzxr8dTj_KXkZI5Oo_6l1ECSPpjdDaqHt5Djn7VgIWdAdC0rLJZI-ZWm/exec";
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzWOI3ylMRBIk2-FNxXmKpx0FFaCXAVjjv5lwrWnFlm-gJIHkUpC1cS4I3lwnQYOun1/exec";
     
     fetch(GOOGLE_SHEET_URL, {
       method: "POST",
