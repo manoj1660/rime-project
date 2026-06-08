@@ -11,6 +11,16 @@ const applicationSchema = new mongoose.Schema(
     },
     gender: { type: String, required: true },
     address: { type: String },
+    source: { 
+      type: String, 
+    
+    },
+    referenceName: { 
+     type: String,
+    },
+    couponCode: { 
+      type: String 
+    },
   },
   { timestamps: true },
 );

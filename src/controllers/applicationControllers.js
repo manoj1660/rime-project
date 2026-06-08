@@ -86,7 +86,7 @@ export const createApplication = async (req, res) => {
   console.log("--- START: New Application Request ---");
   
   try {
-    const { fullName, email, phone, course, gender, address } = req.body;
+    const { fullName, email, phone, course, gender, address , source, referenceName, couponCode } = req.body;
 
     // 🔴 1. Validation
     if (!fullName || !email || !phone || !course) {
@@ -98,7 +98,7 @@ export const createApplication = async (req, res) => {
     }
 
     // 🔴 2. Save to MongoDB
-    const application = await Application.create({ fullName, email, phone, course, gender, address });
+    const application = await Application.create({ fullName, email, phone, course, gender, address , source, referenceName, couponCode });
     const populatedApp = await Application.findById(application._id).populate("course");
     const courseTitle = populatedApp.course ? populatedApp.course.title : "Unknown Course";
     console.log("Step 2 Success: Saved to MongoDB");
@@ -110,7 +110,7 @@ export const createApplication = async (req, res) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        fullName, email, phone, course: courseTitle, gender, address,
+        fullName, email, phone, course: courseTitle, gender, address,source, referenceName: referenceName || "N/A",couponCode: couponCode || "N/A",
         appliedAt: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
       }),
     }).catch(err => console.log("Sheet Error:", err.message));
