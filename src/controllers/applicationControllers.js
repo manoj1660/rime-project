@@ -157,6 +157,9 @@ export const createApplication = async (req, res) => {
             <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Course:</b></td><td style="padding: 10px; border: 1px solid #eee;">${courseTitle}</td></tr>
             <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Gender:</b></td><td style="padding: 10px; border: 1px solid #eee;">${gender}</td></tr>
             <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Address:</b></td><td style="padding: 10px; border: 1px solid #eee;">${address}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Source:</b></td><td style="padding: 10px; border: 1px solid #eee;">${source || "N/A"}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Reference Name:</b></td><td style="padding: 10px; border: 1px solid #eee;">${referenceName || "N/A"}</td></tr>
+            <tr><td style="padding: 10px; border: 1px solid #eee;"><b>Coupon Code:</b></td><td style="padding: 10px; border: 1px solid #eee;">${couponCode || "N/A"}</td></tr>
           </table>
           <p style="font-size: 12px; color: #7f8c8d; margin-top: 15px;">Note: This data is also saved in MongoDB and Google Sheets.</p>
         </div>
